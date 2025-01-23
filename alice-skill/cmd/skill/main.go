@@ -1,32 +1,22 @@
 package main
 
 import (
+	"local/alice-skill/handlers"
 	"net/http"
 )
 
+var Mux *http.ServeMux
+
 func main() {
+	Mux = http.NewServeMux()
+	Mux.HandleFunc("/", http.HandlerFunc(handlers.HandlerPost))
+	Mux.HandleFunc("/get", http.HandlerFunc(handlers.HandlerGet))
+
 	if err := run(); err != nil {
 		panic(err)
 	}
 }
 
 func run() error {
-	return http.ListenAndServe(":8080", http.HandlerFunc(webhook))
-}
-
-func webhook(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write([]byte(`
-	{
-		"response": {
-			"text": "Извините, я пока ничего не умею"
-		},
-		"version": "1.0"
-	}
-	`))
+	return http.ListenAndServe(":8080", Mux)
 }
