@@ -2,15 +2,18 @@ package main
 
 import (
 	"local/alice-skill/handlers"
+	"local/alice-skill/internal/urlstore"
 	"net/http"
 )
 
 var Mux *http.ServeMux
+var storage = urlstore.NewURLStore()
 
 func main() {
+
 	Mux = http.NewServeMux()
-	Mux.HandleFunc("/", http.HandlerFunc(handlers.HandlerPost))
-	Mux.HandleFunc("/get", http.HandlerFunc(handlers.HandlerGet))
+	Mux.HandleFunc("/", mwPost(http.HandlerFunc(handlers.HandlerPost)))
+	Mux.HandleFunc("/", mwGet(http.HandlerFunc(handlers.HandlerGet)))
 
 	if err := run(); err != nil {
 		panic(err)
