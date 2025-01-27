@@ -1,71 +1,63 @@
 package handlers
 
 import (
-	"fmt"
-	"net/http"
-	"local/alice-skill/utils"
 	"local/alice-skill/internal/urlstore"
-
-	
+	"local/alice-skill/utils"
+	"net/http"
+	"io"
 )
 
-func parsURL(w http.ResponseWriter, r *http.Request)string {
-	shortURL := r.URL.Path[1:]
-	longURL := urlstore.GetURL(shortURL)
-	if longURL == "" {
-		http.Error( w,"Long URL is not exist",400)
+func parseURL(storage *urlstorage.URLStorage, w http.ResponseWriter, r *http.Request) string {
+	shortURL := r.URL.Path[1:] // Извлекаем короткий URL из пути запроса
+	longURL, err := storage.GetURL(shortURL)
+	if err != nil || longURL == "" || longURL == " " {
+		http.Error(w, "Long URL does not exist", http.StatusBadRequest) // Возвращаем ошибку, если длинный URL не найден
 		return ""
 	}
+
 	return longURL
 }
-		
 
+func handleGet(w http.ResponseWriter, r *http.Request, storage *urlstorage.URLStorage) {
+    longURL := parseURL(storage, w, r) // Получаем длинный URL
+    if longURL == "" {
+        // Если длинного URL нет, отправляем ошибку и не продолжаем выполнение
+        http.Error(w, "URL not found", http.StatusNotFound)
+        return
+    }
 
-
-func HandlerGet(s urlstore.URLStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-		case "GET":
-			longURL := parsURL(w,r)
-			if longURL == "" {
-				http.Error(w, "Long URL is not exist", 400)
-				return
-			}
-			http.Redirect(w, r, longURL, 307)
-	
-		case "POST":
-			var longURLPost string
-			_, err := fmt.Fscan(r.Body, longURLPost)
-			if err != nil || longURLPost == "" || longURLPost == " " {
-				http.Error(w, "Invalid URL", 400)
-				return
-			}
-			shortURL := utils.GenerateShortURL(longURLPost)
-			s.SaveURL(shortURL, longURLPost)
-		default:
-			http.Error(w, "Method not allowed", 400)
-			return
-			}	
-
-
-
-	}
-
+    // Отправляем редирект на длинный URL
+    w.Header().Set("Location", longURL)
+    w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func HandlerPost(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", 400)
+func handlePost(w http.ResponseWriter, r *http.Request, storage *urlstorage.URLStorage) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil || len(body) == 0 {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	var longUrl string 
-	 _, err := fmt.Fscan(r.Body, longUrl)
-	 if err != nil || longUrl == "" || longUrl == " " {
-		http.Error(w, "Invalid URL", 400)
-		 return
+	longURLPost := string(body)
+	if longURLPost == "" || longURLPost == " " {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+	shortURL := utils.GenerateShortURL(longURLPost)
+	storage.SaveURL(shortURL, longURLPost)
+	w.Header().Set("Content-type", "text/plain")
+	w.Write([]byte(shortURL)) // Отправляем сокращённый URL
+	w.WriteHeader(http.StatusCreated) // Ответ с кодом 201
+}
+
+func HandleURL(storage *urlstorage.URLStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGet(w, r, storage)
+		case http.MethodPost:
+			handlePost(w, r, storage)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	shortURL := utils.GenerateShortURL(longUrl)
-	urlstore.SaveURL(shortURL, longUrl)
-	w.WriteHeader(201)
-	w.Write([]byte(shortURL))		 
+	}
 }

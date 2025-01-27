@@ -7,13 +7,14 @@ import (
 )
 
 var Mux *http.ServeMux
-var storage = urlstore.NewURLStore()
+var storage = urlstorage.NewURLStore()
 
 func main() {
 
 	Mux = http.NewServeMux()
-	Mux.HandleFunc("/", mwPost(http.HandlerFunc(handlers.HandlerPost)))
-	Mux.HandleFunc("/", mwGet(http.HandlerFunc(handlers.HandlerGet)))
+	Mux.HandleFunc("/", handlers.HandleURL(storage))
+
+	run()
 
 	if err := run(); err != nil {
 		panic(err)
@@ -21,5 +22,5 @@ func main() {
 }
 
 func run() error {
-	return http.ListenAndServe(":8080", Mux)
+	return http.ListenAndServe(":8082", Mux)
 }
