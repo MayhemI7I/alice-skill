@@ -42,9 +42,14 @@ func handlePost(w http.ResponseWriter, r *http.Request, storage *urlstorage.URLS
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
-	shortURL := utils.GenerateShortURL(longURLPost)
+	shortURL, err := utils.GenerateShortURL(longURLPost)
+	if err != nil {
+		http.Error(w, "Error generating short URL", http.StatusInternalServerError)
+			return
+		
+	}
 	storage.SaveURL(shortURL, longURLPost)
-	w.Header().Set("Content-type", "text/plain")
+	w.Header().Set("Content-type", "text/plain; charset=utf-8")
 	w.Write([]byte(shortURL)) // Отправляем сокращённый URL
 	w.WriteHeader(http.StatusCreated) // Ответ с кодом 201
 }

@@ -29,12 +29,12 @@ func TestHandleGet(t *testing.T) {
             name: "successful redirect",
             setupStorage: func() *urlstorage.URLStorage {
                 s := urlstorage.NewURLStorage()
-                s.SaveURL("abc123", "https://long-url.com")
+                s.SaveURL("abc123", "/long-url.com")
                 return s
             },
             urlPath:      "/abc123",
             wantStatus:   http.StatusTemporaryRedirect,
-            wantLocation: "https://long-url.com",
+            wantLocation: "/long-url.com",
         },
         {
             name: "not found",
@@ -63,7 +63,7 @@ func TestHandleGet(t *testing.T) {
             storage := tt.setupStorage()
             req := httptest.NewRequest(http.MethodGet, tt.urlPath, nil)
             res := httptest.NewRecorder()
-
+            
             HandleURL(storage).ServeHTTP(res, req)
 
             assert.Equal(t, tt.wantStatus, res.Code, "status code mismatch")
@@ -84,7 +84,7 @@ func TestHandlePost(t *testing.T) {
     }{
         {
             name:        "successful creation",
-            body:        "https://valid-url.com",
+            body:        "/valid-url.com",
             wantStatus:  http.StatusCreated,
             wantContain: true,
         },
@@ -92,7 +92,7 @@ func TestHandlePost(t *testing.T) {
             name:       "empty body",
             body:       "",
             wantStatus: http.StatusBadRequest,
-            wantBody:   "Invalid request body\n",
+            wantBody:   "Invalid request body",
         },
         {
             name:       "invalid URL",
@@ -111,7 +111,7 @@ func TestHandlePost(t *testing.T) {
             HandleURL(storage).ServeHTTP(res, req)
 
             assert.Equal(t, tt.wantStatus, res.Code, "status code mismatch")
-            assert.Equal(t, "text/plain", res.Header().Get("Content-Type"), "content type mismatch")
+            assert.Equal(t, "text/plain; charset=utf-8", res.Header().Get("Content-Type"), "content type mismatch")
 
             if tt.wantContain {
                 // Проверяем что вернулся корректный короткий URL

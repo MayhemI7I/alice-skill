@@ -1,13 +1,13 @@
 package main
 
 import (
-	"local/alice-skill/internal/handlers"
-	"local/alice-skill/internal/urlstore"
+	"local/alice-skill/handlers"
+	"local/alice-skill/internal/urlstorage"
 	"net/http"
 )
 
 var Mux *http.ServeMux
-var storage = urlstorage.NewURLStore()
+var storage = urlstorage.NewURLStorage()
 
 func main() {
 
@@ -22,5 +22,6 @@ func main() {
 }
 
 func run() error {
-	return http.ListenAndServe(":8082", Mux)
+	return http.ListenAndServe(":8086", Mux)
 }
+
