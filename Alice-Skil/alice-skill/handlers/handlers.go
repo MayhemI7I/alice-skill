@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"io"
 	"local/alice-skill/internal/urlstorage"
 	"local/alice-skill/utils"
 	"net/http"
-	"io"
 )
+
 
 func parseURL(storage *urlstorage.URLStorage, w http.ResponseWriter, r *http.Request) string {
 	shortURL := r.URL.Path[1:] // Извлекаем короткий URL из пути запроса
@@ -19,16 +20,16 @@ func parseURL(storage *urlstorage.URLStorage, w http.ResponseWriter, r *http.Req
 }
 
 func handleGet(w http.ResponseWriter, r *http.Request, storage *urlstorage.URLStorage) {
-    longURL := parseURL(storage, w, r) // Получаем длинный URL
-    if longURL == "" {
-        // Если длинного URL нет, отправляем ошибку и не продолжаем выполнение
-        http.Error(w, "URL not found", http.StatusNotFound)
-        return
-    }
+	longURL := parseURL(storage, w, r) // Получаем длинный URL
+	if longURL == "" {
+		// Если длинного URL нет, отправляем ошибку и не продолжаем выполнение
+		http.Error(w, "URL not found", http.StatusNotFound)
+		return
+	}
 
-    // Отправляем редирект на длинный URL
-    w.Header().Set("Location", longURL)
-    w.WriteHeader(http.StatusTemporaryRedirect)
+	// Отправляем редирект на длинный URL
+	w.Header().Set("Location", longURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func handlePost(w http.ResponseWriter, r *http.Request, storage *urlstorage.URLStorage) {
@@ -45,12 +46,12 @@ func handlePost(w http.ResponseWriter, r *http.Request, storage *urlstorage.URLS
 	shortURL, err := utils.GenerateShortURL(longURLPost)
 	if err != nil {
 		http.Error(w, "Error generating short URL", http.StatusInternalServerError)
-			return
-		
+		return
+
 	}
 	storage.SaveURL(shortURL, longURLPost)
 	w.Header().Set("Content-type", "text/plain; charset=utf-8")
-	w.Write([]byte(shortURL)) // Отправляем сокращённый URL
+	w.Write([]byte(shortURL))         // Отправляем сокращённый URL
 	w.WriteHeader(http.StatusCreated) // Ответ с кодом 201
 }
 

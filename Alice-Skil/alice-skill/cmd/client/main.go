@@ -7,10 +7,11 @@ import (
 	"os"
 	"strings"
 	"github.com/go-resty/resty/v2"
+	"local/alice-skill/config"
 )
 
 func main() {
-	endpoint := "http://localhost:8086/"
+	endpoint := config.InitConfig()
 	fmt.Println("Введите длинный URL")
 	reader := bufio.NewReader(os.Stdin)
 	long, err := reader.ReadString('\n')
@@ -25,7 +26,7 @@ func main() {
 	// тело должно быть источником потокового чтения io.Reader
 	response, err := client.R().
 		SetFormData(map[string]string{"url": long}).
-		Post(endpoint)
+		Post(endpoint.BaseURL)
 	if err != nil {
 		log.Fatalf("error: %s", err.Error())
 	}
