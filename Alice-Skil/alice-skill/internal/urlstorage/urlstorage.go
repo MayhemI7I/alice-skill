@@ -2,12 +2,15 @@ package urlstorage
 
 import (
 	"errors"
-	"sync"
+	"local/alice-skill/logger"
 	"log"
+	"sync"
 )
 
+
+
 type URLStorage struct {
-	urls map[string]string
+	urls map[string]string 
 	mu   sync.Mutex
 }
 
@@ -18,20 +21,22 @@ func NewURLStorage() *URLStorage {
 	}
 }
 
-func (us *URLStorage) SaveURL(shortURL, longURL string)  {
+func (us *URLStorage) SaveURL(shortURL, longURL string) error {
 	us.mu.Lock()
 	defer us.mu.Unlock()
 	if shortURL == "" || longURL == "" {
 		log.Printf("Invalid argument: %s, %s", shortURL, longURL)
-		return 
+		return errors.New("invalid argument")
 	}
 	if _, exists := us.urls[shortURL]; exists {
 		log.Printf("URL already exists: %s", shortURL)
-		return
+		return errors.New("URL already exists")
 	}
 	us.urls[shortURL] = longURL
-	log.Printf("Saved: %s -> %s", shortURL, longURL)
+	logger.Log.Info("Saved: %s -> %s", shortURL, longURL)
+	return nil
 }
+
 
 func (us *URLStorage) GetURL(shortUrl string) (string, error) {
 	us.mu.Lock()
@@ -45,7 +50,7 @@ func (us *URLStorage) GetURL(shortUrl string) (string, error) {
 	if !ok {
 		return "", errors.New("URL not found in storage")
 	}
-	log.Printf("Retrived: %s -> %s", shortUrl, value)
+	logger.Log.Info("Retrived: %s -> %s", shortUrl, value)
 	return value, nil
 
 }

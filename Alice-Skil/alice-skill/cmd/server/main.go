@@ -1,28 +1,34 @@
 package main
 
 import (
+	"local/alice-skill/compression/zstd"
 	"local/alice-skill/config"
 	"local/alice-skill/handlers"
 	"local/alice-skill/internal/urlstorage"
-	"log"
+	"local/alice-skill/logger"
 	"net/http"
 )
 
-var Mux *http.ServeMux
-var storage = urlstorage.NewURLStorage()
-
 func main() {
+
 	cfg := config.InitConfig()
 
-	Mux = http.NewServeMux()
-	Mux.HandleFunc("/", handlers.HandleURL(storage))
+	logger.InitLogger(cfg.LogLevel)
+	defer logger.CloseLogger()
 
-	if err := run(cfg, Mux); err != nil {
-		log.Fatal(err)
+	store := urlstorage.NewURLStorage()
+
+	urlHandler := handlers.NewURLHandler(store)
+
+	mux := http.NewServeMux()
+	mux.Handle("/", handlers.WithLog(zstd.ZstdDecompress(zstd.ZstdCompress(http.HandlerFunc(urlHandler.HandURL)))))
+
+	if err := run(cfg, mux); err != nil {
+		logger.Log.Fatal(err)
 	}
-	log.Printf("Server runed on %s:%s", cfg.ServerAdress, cfg.ServerPort)
 }
 
 func run(cfg *config.Config, mux *http.ServeMux) error {
+	logger.Log.Infof("Server started on %s:%s", cfg.ServerAdress, cfg.ServerPort)
 	return http.ListenAndServe(cfg.ServerAdress+":"+cfg.ServerPort, mux)
 }
